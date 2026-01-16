@@ -1,87 +1,146 @@
-# SocialMedia-Sentiment-Insight
+SocialMedia-Sentiment-Insight
+
+A sentiment analysis project for YouTube comments, leveraging Python, DVC, and AWS for deployment. The system predicts sentiment for comments and can be deployed using Docker on AWS EC2 with CI/CD via GitHub Actions.
+
+Table of Contents
+
+Environment Setup
+
+DVC Workflow
+
+YouTube API
+
+Demo
+
+AWS Deployment
+
+Docker Deployment
+
+GitHub Actions CI/CD
+
+Environment Setup
+
+Create a Conda environment and install dependencies:
 
 conda create -n youtube python=3.11 -y
-
 conda activate youtube
-
 pip install -r requirements.txt
 
-# DVC
+DVC Workflow
+
+Initialize DVC:
+
 dvc init
+
+
+Reproduce pipeline stages:
 
 dvc repro
 
+
+Visualize pipeline:
+
 dvc dag
 
-# AWS
-aws configure
+YouTube API
 
-Json data demo in postman
+To fetch comments for sentiment analysis, you need a YouTube API key.
+
+Follow this guide: Get YouTube API Key from GCP
+
+Demo
+
+Run the API locally:
+
 http://localhost:5000/predict
 
+
+Example JSON request in Postman:
+
 {
-    "comments": ["This video is awsome! I loved a lot", "Very bad explanation. poor video"]
+  "comments": [
+    "This video is awesome! I loved it a lot",
+    "Very bad explanation. Poor video"
+  ]
 }
-chrome://extensions
 
-how to get youtube api key from gcp:
-https://www.youtube.com/watch?v=i_FdiQMwKiw
+AWS Deployment
+Prerequisites
 
-AWS-CICD-Deployment-with-Github-Actions
-1. Login to AWS console.
-2. Create IAM user for deployment
-#with specific access
+Login to AWS Console
 
-1. EC2 access : It is virtual machine
+Create an IAM user with deployment access
 
-2. ECR: Elastic Container registry to save your docker image in aws
+Policies required:
+
+AmazonEC2ContainerRegistryFullAccess
+
+AmazonEC2FullAccess
+
+Steps
+
+ECR (Elastic Container Registry)
+
+Create a repository to store Docker images
+
+Save the URI, e.g.:
+
+315865595366.dkr.ecr.us-east-1.amazonaws.com/youtube
 
 
-#Description: About the deployment
+EC2 (Ubuntu Machine)
 
-1. Build docker image of the source code
+Launch an EC2 instance
 
-2. Push your docker image to ECR
-
-3. Launch Your EC2 
-
-4. Pull Your image from ECR in EC2
-
-5. Lauch your docker image in EC2
-
-#Policy:
-
-1. AmazonEC2ContainerRegistryFullAccess
-
-2. AmazonEC2FullAccess
-3. Create ECR repo to store/save docker image
-- Save the URI: 315865595366.dkr.ecr.us-east-1.amazonaws.com/youtube
-4. Create EC2 machine (Ubuntu)
-5. Open EC2 and Install docker in EC2 Machine:
-#optinal
+Install Docker:
 
 sudo apt-get update -y
-
-sudo apt-get upgrade
-
-#required
-
+sudo apt-get upgrade -y
 curl -fsSL https://get.docker.com -o get-docker.sh
-
 sudo sh get-docker.sh
-
 sudo usermod -aG docker ubuntu
-
 newgrp docker
-6. Configure EC2 as self-hosted runner:
-setting>actions>runner>new self hosted runner> choose os> then run command one by one
-7. Setup github secrets:
+
+Docker Deployment
+
+Build Docker image:
+
+docker build -t youtube-sentiment .
+
+
+Push image to ECR:
+
+aws ecr get-login-password --region <AWS_REGION> | docker login --username AWS --password-stdin <ECR_URI>
+docker tag youtube-sentiment <ECR_URI>:latest
+docker push <ECR_URI>:latest
+
+
+Pull and run image on EC2:
+
+docker pull <ECR_URI>:latest
+docker run -p 5000:5000 <ECR_URI>:latest
+
+GitHub Actions CI/CD
+
+Set up EC2 as a self-hosted runner:
+
+Navigate to Settings > Actions > Runners > New self-hosted runner
+
+Choose OS and follow setup commands
+
+Add GitHub secrets:
+
 AWS_ACCESS_KEY_ID=
-
 AWS_SECRET_ACCESS_KEY=
+AWS_REGION=us-east-1
+AWS_ECR_LOGIN_URI=<ECR_URI>
+ECR_REPOSITORY_NAME=<ECR_REPO_NAME>
 
-AWS_REGION = us-east-1
 
-AWS_ECR_LOGIN_URI = demo>>  566373416292.dkr.ecr.ap-south-1.amazonaws.com
+Workflow automates:
 
-ECR_REPOSITORY_NAME = simple-app
+Docker image build
+
+Push to ECR
+
+Deploy to EC2
